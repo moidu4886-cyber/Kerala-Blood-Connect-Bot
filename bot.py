@@ -9,6 +9,7 @@ import asyncio
 import logging
 import sys
 
+from aiohttp import web
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -68,7 +69,22 @@ async def donation_reminder_task(bot: Bot) -> None:
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
+async def health_check(request):
+    return web.Response(text="Kerala Blood Connect Bot Running ✅")
 
+
+async def start_web_server():
+    app = web.Application()
+    app.router.add_get("/", health_check)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+
+    site = web.TCPSite(runner, "0.0.0.0", 8000)
+    await site.start()
+
+    logger.info("Health check server started on port 8000")
+    
 async def main() -> None:
     if not config.BOT_TOKEN:
         logger.critical("BOT_TOKEN is not set in .env — exiting.")
@@ -81,7 +97,10 @@ async def main() -> None:
 
     # ── Connect to MongoDB ────────────────────────────────────────────────────
     await db.connect()
+# ── Connect to MongoDB ────────────────────────────────────────────────────
 
+# ── Start health check server ────────────────────────────────────────────
+    await start_web_server()
     # ── Bot & Dispatcher ─────────────────────────────────────────────────────
     bot = Bot(
         token=config.BOT_TOKEN,
